@@ -1,0 +1,15 @@
+{
+  "redis": {
+    "ip": "",
+    "port": "6379",
+    "password": "",
+    "database": 0
+  },
+  "sql": {
+    "ip": "",
+    "port": "5432",
+    "user": "",
+    "password": "",
+    "database": ""
+  }
+}

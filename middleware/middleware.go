@@ -59,7 +59,7 @@ func initGinEngine() {
 func SetUp() *gin.Engine {
 	GinEngine.Use(func(context *gin.Context) {
 		log.Println("start")
-		context.Handler()
+		context.Next()
 		log.Println("end")
 	})
 	return GinEngine

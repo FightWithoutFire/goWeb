@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis"
+	"goWeb/model"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"io"
@@ -12,12 +13,14 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"syscall"
 )
 
 var DbClient *gorm.DB
 var RedisClient *redis.Client
 var GinEngine *gin.Engine
+var ProjectName string
 
 func initPostgreCon(config *SqlConfig) (db *gorm.DB, err error) {
 	host := config.Ip
@@ -31,7 +34,9 @@ func initPostgreCon(config *SqlConfig) (db *gorm.DB, err error) {
 }
 
 func init() {
-	config, err := getConfig()
+	ProjectName = "goWeb"
+
+	config, err := GetConfig()
 	if err != nil {
 		log.Fatalln("init fail")
 	}
@@ -43,6 +48,10 @@ func init() {
 	initRedis(config.RedisConfig)
 	initGinEngine()
 	SetUp()
+	err = DbClient.Migrator().AutoMigrate(&model.User{})
+	if err != nil {
+		log.Fatalln("AutoMigrate error", err)
+	}
 }
 
 func initRedis(config *RedisConfig) {
@@ -55,13 +64,29 @@ func initRedis(config *RedisConfig) {
 
 func initGinEngine() {
 	GinEngine = gin.Default()
+	GinEngine.Use(gin.Logger())
+	GinEngine.Use(gin.Recovery())
 }
 func SetUp() *gin.Engine {
 	GinEngine.Use(func(context *gin.Context) {
 		log.Println("start")
+		//m := &model.User{}
+		//cCp := context.Copy()
+		//cCp.BindJSON(m)
+		//hello := cCp.GetHeader("hello")
+		//log.Println("hello:", hello)
+		//if m.ID == "0" {
+		//	log.Println("hello 0")
+		//	context.AbortWithStatusJSON(500, gin.H{
+		//		"mgs": "id not 0",
+		//	})
+		//} else {
+		//
+		//}
 		context.Next()
 		log.Println("end")
 	})
+
 	return GinEngine
 }
 
@@ -85,8 +110,16 @@ type SqlConfig struct {
 	Database string `json:"database"`
 }
 
-func getConfig() (*Config, error) {
-	file, err := os.OpenFile("../config.json", syscall.O_RDONLY, fs.ModePerm)
+func GetConfig() (*Config, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatalln("error read file")
+	}
+	split := strings.Split(dir, "goWeb")
+	configDir := split[0] + ProjectName + "/config.json"
+	log.Println(configDir)
+
+	file, err := os.OpenFile(configDir, syscall.O_RDONLY, fs.ModePerm)
 	if err != nil {
 		log.Fatalln("error read file")
 	}

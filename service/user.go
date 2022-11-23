@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"goWeb/middleware"
 	"goWeb/model"
+	"gorm.io/gorm"
 	"log"
 	"time"
 )
@@ -16,11 +17,20 @@ type IUserService interface {
 	UpdateUser(user *model.User)
 	BatchUpdateUser(users []*model.User)
 	BatchCreateUser(user []*model.User)
+	PageUser(users *[]*model.User)
 }
 
 var UserServiceImpl IUserService
 
 type UserService struct {
+}
+
+func (u UserService) PageUser(users *[]*model.User) {
+	middleware.DbClient.Find(users)
+	for i, val := range *users {
+		log.Println("user: ", i, val.ID, val.Name)
+
+	}
 }
 
 func (u UserService) CreateUser(user *model.User) {
@@ -70,8 +80,30 @@ func (u UserService) UpdateUser(user *model.User) {
 }
 
 func (u UserService) BatchUpdateUser(users []*model.User) {
-	//TODO implement me
-	panic("implement me")
+	middleware.DbClient.Transaction(func(tx *gorm.DB) error {
+		tx.Transaction(func(tx *gorm.DB) error {
+			return nil
+		})
+
+		rows, err := tx.Model(&model.User{}).Find(&model.User{}).Rows()
+		if err != nil {
+			log.Println("error get allUser")
+			return err
+		}
+		var users []*model.User
+		rows.Scan(users)
+		for rows.Next() {
+			row := &model.User{}
+			err := rows.Scan(row)
+			log.Println("user result:", row)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+
+	})
+	return
 }
 
 func (u UserService) BatchCreateUser(user []*model.User) {

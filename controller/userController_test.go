@@ -25,7 +25,7 @@ func TestGetPostgreCon(t *testing.T) {
 		t.Error("error", err)
 	}
 	log.Println(string(data))
-	request := httptest.NewRequest(http.MethodPost, AddUserUri, strings.NewReader(string(data)))
+	request := httptest.NewRequest(http.MethodPost, AddUserEndpoint, strings.NewReader(string(data)))
 	request.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(w, request)
 	resbyte, err := io.ReadAll(w.Body)
@@ -151,6 +151,58 @@ func TestUpdateWithoutId(t *testing.T) {
 
 	s.ServeHTTP(w, r)
 
+	if w.Code != http.StatusInternalServerError {
+		t.Error("error delete")
+	}
+
+}
+
+func TestRedirect(t *testing.T) {
+
+	r := middleware.SetUp()
+	w := httptest.NewRecorder()
+
+	request := httptest.NewRequest(http.MethodGet, RedirectEndpoint, nil)
+	r.ServeHTTP(w, request)
+	resbyte, err := io.ReadAll(w.Body)
+	if err != nil {
+		t.Error("error", err.Error())
+	}
+	log.Println(string(resbyte))
+	fmt.Sprintf("%s", "a")
+
+}
+
+func TestPage(t *testing.T) {
+	r := middleware.SetUp()
+	w := httptest.NewRecorder()
+
+	request := httptest.NewRequest(http.MethodGet, PageEndpoint, nil)
+	r.ServeHTTP(w, request)
+	resbyte, err := io.ReadAll(w.Body)
+	log.Println(string(resbyte))
+	if err != nil {
+		t.Error("error", err.Error())
+	}
+
+}
+
+func TestAbort(t *testing.T) {
+	s := middleware.SetUp()
+	user := &model.User{ID: "0", Name: randStr(7)}
+	data, err := json.Marshal(user)
+	if err != nil {
+		t.Error("error", err)
+	}
+	log.Println(string(data))
+	r := httptest.NewRequest(http.MethodPut, fmtUsersUri(user.ID), strings.NewReader(string(data)))
+	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set("hello", "world")
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, r)
+
+	log.Println(w.Body.String())
 	if w.Code != http.StatusInternalServerError {
 		t.Error("error delete")
 	}

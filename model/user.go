@@ -1,15 +1,77 @@
 package model
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"database/sql/driver"
+	"encoding/base64"
+	"errors"
+	"fmt"
 	"github.com/go-playground/validator/v10"
+	"goWeb/middleware"
 	"gorm.io/gorm"
 	"log"
+	"strings"
 )
+
+func init() {
+	err := middleware.DbClient.Migrator().AutoMigrate(&User{})
+	if err != nil {
+		log.Fatalln("AutoMigrate error", err)
+	}
+}
+
+type EncryptString string
+
+func (e *EncryptString) Value() (driver.Value, error) {
+	password := fmt.Sprint(*e)
+	if strings.HasPrefix("!E!", password) {
+		return password, nil
+	}
+
+	encryptedBytes, err := rsa.EncryptPKCS1v15(
+		rand.Reader,
+		middleware.PublicKey,
+		[]byte(password))
+	if err != nil {
+		log.Println("value err", err)
+		return nil, err
+	}
+	value := "!E!" + base64.StdEncoding.EncodeToString(encryptedBytes)
+
+	return value, nil
+}
+
+func (e *EncryptString) Scan(value interface{}) error {
+	bytes, ok := value.(string)
+	if !ok {
+		return errors.New(fmt.Sprint("Failed to decrypt value:", value))
+	}
+
+	stemp := bytes
+	log.Println(stemp)
+	stemp = stemp[len("!E!"):]
+	log.Println(stemp)
+	decodeString, err := base64.StdEncoding.DecodeString(stemp)
+	if err != nil {
+		return errors.New(fmt.Sprint("Failed to Decode from base64 format:", stemp))
+	}
+	values, err := rsa.DecryptPKCS1v15(rand.Reader,
+		middleware.PrivateKey,
+		decodeString)
+	if err != nil {
+		return errors.New(fmt.Sprint("!!Failed to decrypt value1:", err))
+	}
+	result := string(values)
+	*e = EncryptString(result)
+	return err
+}
 
 type User struct {
 	gorm.Model
-	ID   string `gorm:"id" uri:"id" json:"id"`
-	Name string `gorm:"name" json:"name"`
+	ID       string `gorm:"id" uri:"id" json:"id"`
+	Name     string `gorm:"name" json:"name"`
+	Password *EncryptString
 	//CheckIn  time.Time `gorm:"check_in" json:"checkIn" binding:"required,bookabledate" time_format:"2006-01-02"`
 	//CheckOut time.Time `gorm:"check_out" json:"checkOut" binding:"required,gtfield=CheckIn,bookabledate" time_format:"2006-01-02"`
 }

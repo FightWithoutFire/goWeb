@@ -20,6 +20,7 @@ const (
 	MultipartEndpoint  = "/multipart"
 	SingleFileEndpoint = "/single"
 	PageEndpoint       = "/page"
+	EncryptEndpoint    = "/encrypt"
 )
 
 func init() {
@@ -33,6 +34,17 @@ func init() {
 	middleware.GinEngine.POST(MultipartEndpoint, multipartEndpointFun)
 	middleware.GinEngine.POST(SingleFileEndpoint, singleFileEndpoint)
 	middleware.GinEngine.GET(PageEndpoint, pageFun)
+	middleware.GinEngine.POST(EncryptEndpoint, encryptFun)
+}
+
+func encryptFun(context *gin.Context) {
+	user := &model.User{}
+	context.Bind(&user)
+	service.UserServiceImpl.Encrypt(user)
+	context.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": user.Password,
+	})
 }
 
 func pageFun(context *gin.Context) {

@@ -18,6 +18,7 @@ type IUserService interface {
 	BatchUpdateUser(users []*model.User)
 	BatchCreateUser(user []*model.User)
 	PageUser(users *[]*model.User)
+	Encrypt(user *model.User)
 }
 
 var UserServiceImpl IUserService
@@ -25,11 +26,22 @@ var UserServiceImpl IUserService
 type UserService struct {
 }
 
+func (u UserService) Encrypt(user *model.User) {
+	log.Println("before create:", *user.Password)
+	middleware.DbClient.Create(user)
+	log.Println("user password:", *user.Password)
+}
+
+func (u UserService) Decrypt(user *model.User) {
+	log.Println("before create:", *user.Password)
+	middleware.DbClient.Find(user, 36)
+	log.Println("user password:", *user.Password)
+}
+
 func (u UserService) PageUser(users *[]*model.User) {
 	middleware.DbClient.Find(users)
 	for i, val := range *users {
 		log.Println("user: ", i, val.ID, val.Name)
-
 	}
 }
 
@@ -52,7 +64,7 @@ func (u UserService) DeleteUser(id string) {
 func (u UserService) GetUser(user *model.User) {
 	userRedis := middleware.RedisClient.Get(fmt.Sprintf("user::%s", user.ID))
 	bytes, err := userRedis.Bytes()
-	if len(bytes) > 0 {
+	if !middleware.DisableCache && len(bytes) > 0 {
 
 		err = json.Unmarshal(bytes, user)
 		if err != nil {

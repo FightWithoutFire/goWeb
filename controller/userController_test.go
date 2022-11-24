@@ -209,6 +209,41 @@ func TestAbort(t *testing.T) {
 
 }
 
+func TestEncrypt(t *testing.T) {
+	r := middleware.SetUp()
+	w := httptest.NewRecorder()
+	name := randStr(7)
+	data, err := json.Marshal(map[string]string{"name": name, "password": "abcde"})
+	if err != nil {
+		t.Error("error", err)
+	}
+	log.Println(string(data))
+	request := httptest.NewRequest(http.MethodPost, EncryptEndpoint, strings.NewReader(string(data)))
+	request.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, request)
+	resbyte, err := io.ReadAll(w.Body)
+	if err != nil {
+		t.Error("error", err.Error())
+	}
+	log.Println(string(resbyte))
+
+}
+
+func TestDecrypt(t *testing.T) {
+	r := middleware.SetUp()
+	w := httptest.NewRecorder()
+	id := "35"
+
+	request := httptest.NewRequest(http.MethodGet, fmtUsersUri(id), nil)
+	r.ServeHTTP(w, request)
+	resbyte, err := io.ReadAll(w.Body)
+	if err != nil {
+		t.Error("error", err.Error())
+	}
+	log.Println(string(resbyte))
+
+}
+
 func BenchmarkUpdateUserFun(b *testing.B) {
 	for i := b.N; i < 0; i++ {
 		err, recorder := updateTest()

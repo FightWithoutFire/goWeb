@@ -1,5 +1,6 @@
 config.json
-
+public.key
+private.key
 # Default ignored files
 /shelf/
 /workspace.xml

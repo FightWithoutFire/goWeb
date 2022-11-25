@@ -29,9 +29,10 @@ type PageObj struct {
 
 func Paginate(context *gin.Context) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		log.Println(context.Request.RequestURI)
+		copy := context.Copy()
+		log.Println(copy.Request.RequestURI)
 		pageObj := &PageObj{}
-		err := context.ShouldBindQuery(pageObj)
+		err := copy.ShouldBindQuery(pageObj)
 		if err != nil {
 			log.Println("error binding:", err)
 		}
@@ -50,7 +51,7 @@ func Paginate(context *gin.Context) func(db *gorm.DB) *gorm.DB {
 		}
 
 		offset := (pageObj.Page - 1) * pageObj.PageSize
-		return db.Offset(offset).Limit(pageObj.PageSize)
+		return db.Offset(offset).Limit(pageObj.PageSize).Order("created_at")
 	}
 }
 

@@ -49,7 +49,8 @@ func encryptFun(context *gin.Context) {
 
 func pageFun(context *gin.Context) {
 	var users = new([]*model.User)
-	service.UserServiceImpl.PageUser(users)
+	paginate := model.Paginate(context)
+	service.UserServiceImpl.PageUser(paginate, users)
 	context.JSON(http.StatusOK, gin.H{
 		"code": 200,
 		"data": *users,

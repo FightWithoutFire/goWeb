@@ -17,7 +17,7 @@ type IUserService interface {
 	UpdateUser(user *model.User)
 	BatchUpdateUser(users []*model.User)
 	BatchCreateUser(user []*model.User)
-	PageUser(users *[]*model.User)
+	PageUser(paginate func(db *gorm.DB) *gorm.DB, users *[]*model.User)
 	Encrypt(user *model.User)
 }
 
@@ -38,8 +38,8 @@ func (u UserService) Decrypt(user *model.User) {
 	log.Println("user password:", *user.Password)
 }
 
-func (u UserService) PageUser(users *[]*model.User) {
-	middleware.DbClient.Find(users)
+func (u UserService) PageUser(paginate func(db *gorm.DB) *gorm.DB, users *[]*model.User) {
+	middleware.DbClient.Scopes(paginate).Find(users)
 	for i, val := range *users {
 		log.Println("user: ", i, val.ID, val.Name)
 	}

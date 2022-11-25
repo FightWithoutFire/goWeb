@@ -177,7 +177,7 @@ func TestPage(t *testing.T) {
 	r := middleware.SetUp()
 	w := httptest.NewRecorder()
 
-	request := httptest.NewRequest(http.MethodGet, PageEndpoint, nil)
+	request := httptest.NewRequest(http.MethodGet, PageEndpoint+"?page=2&page_size=2", nil)
 	r.ServeHTTP(w, request)
 	resbyte, err := io.ReadAll(w.Body)
 	log.Println(string(resbyte))

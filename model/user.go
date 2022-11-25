@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"goWeb/middleware"
 	"gorm.io/gorm"
@@ -18,6 +19,38 @@ func init() {
 	err := middleware.DbClient.Migrator().AutoMigrate(&User{})
 	if err != nil {
 		log.Fatalln("AutoMigrate error", err)
+	}
+}
+
+type PageObj struct {
+	Page     int `form:"page"`
+	PageSize int `form:"page_size"`
+}
+
+func Paginate(context *gin.Context) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		log.Println(context.Request.RequestURI)
+		pageObj := &PageObj{}
+		err := context.ShouldBindQuery(pageObj)
+		if err != nil {
+			log.Println("error binding:", err)
+		}
+		log.Println("page", pageObj.Page)
+		if pageObj.Page == 0 {
+			pageObj.Page = 1
+		}
+
+		log.Println("page_size", pageObj.PageSize)
+
+		switch {
+		case pageObj.PageSize > 100:
+			pageObj.PageSize = 100
+		case pageObj.PageSize <= 0:
+			pageObj.PageSize = 10
+		}
+
+		offset := (pageObj.Page - 1) * pageObj.PageSize
+		return db.Offset(offset).Limit(pageObj.PageSize)
 	}
 }
 
